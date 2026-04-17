@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analizador de Reseñas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 64px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f8fafc;
+    }
+    header h1 span { color: #6366f1; }
+    header p { margin-top: 8px; color: #94a3b8; font-size: 0.95rem; }
+
+    .card {
+      background-color: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 720px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      margin-bottom: 16px;
+    }
+
+    /* ── Sección de configuración ── */
+    .config-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .config-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+    }
+    .config-badge.ok  { color: #34d399; border-color: #34d39940; }
+    .config-badge.nok { color: #f87171; border-color: #f8717140; }
+    .config-arrow {
+      color: #475569;
+      font-size: 0.75rem;
+      transition: transform 0.2s;
+    }
+    .config-arrow.open { transform: rotate(180deg); }
+
+    .config-body {
+      margin-top: 20px;
+      display: none;
+    }
+    .config-body.visible { display: block; }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .label-hint {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #475569;
+      text-transform: none;
+      letter-spacing: 0;
+      margin-top: 2px;
+    }
+
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      background-color: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: monospace;
+    }
+    input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 0;
+    }
+    .input-row input { flex: 1; }
+    .btn-save {
+      margin-top: 0 !important;
+      width: auto !important;
+      padding: 12px 20px !important;
+      font-size: 0.85rem !important;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+
+    /* ── Separador ── */
+    .divider {
+      border: none;
+      border-top: 1px solid #2d3148;
+      margin: 28px 0;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      background-color: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      padding: 14px 16px;
+      resize: vertical;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    textarea::placeholder { color: #475569; }
+    textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+    button:hover  { opacity: 0.9; }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Resultado ── */
+    #resultado { margin-top: 28px; display: none; }
+
+    .resultado-titulo {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .resultado-cuerpo {
+      background-color: #0f1117;
+      border: 1px solid #2d3148;
+      border-left: 4px solid #6366f1;
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-size: 0.95rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+    }
+
+    /* Formato del análisis */
+    .resultado-cuerpo h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 20px 0 8px;
+    }
+    .resultado-cuerpo h3:first-child { margin-top: 0; }
+    .resultado-cuerpo p { margin-bottom: 6px; }
+    .resultado-cuerpo ul { padding-left: 20px; margin-bottom: 6px; }
+    .resultado-cuerpo li { margin-bottom: 4px; }
+    .resultado-cuerpo strong { color: #e2e8f0; }
+
+    /* Estado de carga */
+    .cursor-blink {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: #6366f1;
+      vertical-align: text-bottom;
+      animation: blink 0.8s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Error */
+    .error-box {
+      background-color: #1a0f0f;
+      border: 1px solid #7f1d1d;
+      border-left: 4px solid #ef4444;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 0.9rem;
+      color: #fca5a5;
+      line-height: 1.6;
+    }
+
+    footer {
+      margin-top: 40px;
+      color: #334155;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Analizador de <span>Reseñas</span></h1>
+  <p>Pega reseñas de Google y obtén un análisis detallado con IA</p>
+</header>
+
+<!-- Tarjeta de configuración -->
+<div class="card" id="tarjetaConfig">
+  <div class="config-header" onclick="toggleConfig()">
+    <div class="config-header-left">
+      <label style="margin:0;cursor:pointer;">⚙ Configuración de API</label>
+      <span id="apiBadge" class="config-badge nok">✗ Sin clave</span>
+    </div>
+    <span id="configArrow" class="config-arrow">▼</span>
+  </div>
+
+  <div id="configBody" class="config-body">
+    <br>
+    <label for="apiKey">
+      Clave de API de Anthropic
+      <span class="label-hint">Tu clave se guarda solo en este navegador (localStorage). Nunca se envía a ningún servidor externo salvo a api.anthropic.com.</span>
+    </label>
+    <div class="input-row">
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <button class="btn-save" onclick="guardarClave()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tarjeta principal -->
+<div class="card">
+  <label for="resenas">Reseñas de Google</label>
+  <textarea
+    id="resenas"
+    placeholder="Pega aquí las reseñas de Google que quieres analizar...
+
+Ejemplo:
+⭐⭐⭐⭐⭐ 'Excelente servicio, muy rápido y amable el personal.'
+⭐⭐ 'Tuve que esperar mucho tiempo y el trato no fue el mejor.'"
+  ></textarea>
+
+  <button id="btnAnalizar" onclick="analizarResenas()">
+    Analizar Reseñas
+  </button>
+
+  <div id="resultado">
+    <p class="resultado-titulo">Resultado del análisis</p>
+    <div id="resultado-texto" class="resultado-cuerpo"></div>
+  </div>
+</div>
+
+<footer>Analizador de Reseñas &mdash; Versión 2.0 · claude-sonnet-4-6</footer>
+
+<script>
+  /* ── Configuración ── */
+  const STORAGE_KEY = 'anthropic_api_key';
+
+  function cargarClave() {
+    const clave = localStorage.getItem(STORAGE_KEY) || '';
+    document.getElementById('apiKey').value = clave;
+    actualizarBadge(clave);
+    return clave;
+  }
+
+  function guardarClave() {
+    const clave = document.getElementById('apiKey').value.trim();
+    if (clave) {
+      localStorage.setItem(STORAGE_KEY, clave);
+      actualizarBadge(clave);
+      cerrarConfig();
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+      actualizarBadge('');
+    }
+  }
+
+  function actualizarBadge(clave) {
+    const badge = document.getElementById('apiBadge');
+    if (clave && clave.startsWith('sk-')) {
+      badge.textContent = '✓ Clave guardada';
+      badge.className = 'config-badge ok';
+    } else {
+      badge.textContent = '✗ Sin clave';
+      badge.className = 'config-badge nok';
+    }
+  }
+
+  function toggleConfig() {
+    const body  = document.getElementById('configBody');
+    const arrow = document.getElementById('configArrow');
+    const abierto = body.classList.contains('visible');
+    body.classList.toggle('visible', !abierto);
+    arrow.classList.toggle('open', !abierto);
+  }
+
+  function cerrarConfig() {
+    document.getElementById('configBody').classList.remove('visible');
+    document.getElementById('configArrow').classList.remove('open');
+  }
+
+  // Al cargar: verificar si el servidor tiene clave propia
+  document.addEventListener('DOMContentLoaded', async () => {
+    cargarClave();
+    document.getElementById('apiKey').addEventListener('keydown', e => {
+      if (e.key === 'Enter') guardarClave();
+    });
+
+    try {
+      const { serverKey } = await fetch('/api/status').then(r => r.json());
+      if (serverKey) {
+        // El servidor tiene la clave → ocultar todo el panel de configuración
+        document.getElementById('tarjetaConfig').style.display = 'none';
+      }
+    } catch { /* si falla, mostramos el panel normalmente */ }
+  });
+
+  /* ── Análisis ── */
+  async function analizarResenas() {
+    const resenas     = document.getElementById('resenas').value.trim();
+    const btn         = document.getElementById('btnAnalizar');
+    const bloqueRes   = document.getElementById('resultado');
+    const textoRes    = document.getElementById('resultado-texto');
+    const apiKey      = localStorage.getItem(STORAGE_KEY) || '';
+
+    // Validaciones
+    if (!resenas) {
+      mostrarError(textoRes, bloqueRes, 'Por favor, pega al menos una reseña antes de analizar.');
+      return;
+    }
+    if (!apiKey) {
+      mostrarError(textoRes, bloqueRes, 'Primero guarda tu clave de API de Anthropic en la sección de Configuración.');
+      toggleConfig();
+      return;
+    }
+
+    // Estado de carga
+    btn.disabled = true;
+    btn.textContent = 'Analizando…';
+    bloqueRes.style.display = 'block';
+    textoRes.className = 'resultado-cuerpo';
+    textoRes.innerHTML = '<span class="cursor-blink"></span>';
+
+    try {
+      const respuesta = await fetch('/api/analizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resenas, apiKey })
+      });
+
+      if (!respuesta.ok) {
+        const err = await respuesta.json().catch(() => ({}));
+        const msg = err?.error?.message || `Error HTTP ${respuesta.status}`;
+        throw new Error(msg);
+      }
+
+      // Procesar stream SSE
+      const reader  = respuesta.body.getReader();
+      const decoder = new TextDecoder();
+      let   buffer  = '';
+      let   texto   = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lineas = buffer.split('\n');
+        buffer = lineas.pop(); // línea incompleta queda en buffer
+
+        for (const linea of lineas) {
+          if (!linea.startsWith('data: ')) continue;
+          const data = linea.slice(6).trim();
+          if (data === '[DONE]') continue;
+
+          try {
+            const evento = JSON.parse(data);
+            if (evento.type === 'content_block_delta' && evento.delta?.type === 'text_delta') {
+              texto += evento.delta.text;
+              textoRes.innerHTML = formatearResultado(texto) + '<span class="cursor-blink"></span>';
+              textoRes.scrollIntoView({ block: 'nearest' });
+            }
+          } catch { /* ignorar líneas no JSON */ }
+        }
+      }
+
+      // Resultado final sin cursor
+      textoRes.innerHTML = formatearResultado(texto);
+
+    } catch (error) {
+      let mensaje = error.message;
+      if (mensaje.includes('Failed to fetch') || mensaje.includes('NetworkError')) {
+        mensaje = 'No se pudo conectar con la API de Anthropic. Esto puede deberse a restricciones CORS al abrir el archivo directamente en el navegador. Prueba usando un servidor local (ej: Live Server en VS Code).';
+      } else if (mensaje.includes('authentication') || mensaje.includes('401')) {
+        mensaje = 'Clave de API inválida. Verifica que sea correcta en la sección de Configuración.';
+      }
+      mostrarError(textoRes, bloqueRes, mensaje);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analizar Reseñas';
+    }
+  }
+
+  /* ── Helpers ── */
+  function mostrarError(contenedor, bloque, mensaje) {
+    bloque.style.display = 'block';
+    contenedor.className = '';
+    contenedor.innerHTML = `<div class="error-box">⚠ ${mensaje}</div>`;
+  }
+
+  function formatearResultado(texto) {
+    // Convertir Markdown básico a HTML para mostrar mejor el resultado
+    return texto
+      // Negrita **texto**
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Encabezados ## o secciones con guión largo
+      .replace(/^#{1,3}\s+(.+)$/gm, '<h3>$1</h3>')
+      // Listas con - o •
+      .replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>')
+      // Envolver li consecutivos en ul
+      .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+      // Saltos de línea dobles → párrafos
+      .replace(/\n{2,}/g, '</p><p>')
+      // Limpiar
+      .replace(/^/, '<p>').replace(/$/, '</p>')
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p>(<h3>)/g, '$1')
+      .replace(/(<\/h3>)<\/p>/g, '$1')
+      .replace(/<p>(<ul>)/g, '$1')
+      .replace(/(<\/ul>)<\/p>/g, '$1');
+  }
+</script>
+
+</body>
+</html>

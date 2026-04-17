@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: analizador-resenas
+    env: node
+    region: oregon          # Cambia a "frankfurt" si prefieres Europa
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false         # Se configura manualmente en el dashboard de Render
+      - key: NODE_ENV
+        value: production
