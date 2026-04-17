@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>¡Pago exitoso! · Analizador de Reseñas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    .icono {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      animation: pop 0.4s ease;
+    }
+    @keyframes pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      80%  { transform: scale(1.1); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+    h1 { font-size: 1.8rem; font-weight: 700; color: #f8fafc; margin-bottom: 10px; }
+    p  { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; max-width: 380px; margin-bottom: 32px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0d1f1a;
+      border: 1px solid #065f46;
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      color: #34d399;
+      margin-bottom: 32px;
+    }
+    a.btn {
+      display: inline-block;
+      padding: 14px 36px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    a.btn:hover  { opacity: 0.9; }
+    a.btn:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+  <div class="icono">🎉</div>
+  <h1>¡Suscripción activada!</h1>
+  <p>Tu pago fue procesado correctamente. Ya tienes acceso completo al analizador de reseñas.</p>
+  <div class="badge">✓ Suscripción activa · $39/mes</div>
+  <br>
+  <a href="/" class="btn">Ir al analizador →</a>
+</body>
+</html>

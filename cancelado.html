@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pago cancelado · Analizador de Reseñas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    .icono { font-size: 3.5rem; margin-bottom: 20px; }
+    h1 { font-size: 1.6rem; font-weight: 700; color: #f8fafc; margin-bottom: 10px; }
+    p  { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; max-width: 360px; margin-bottom: 32px; }
+    .acciones { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    a.btn-prim {
+      display: inline-block;
+      padding: 13px 28px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    a.btn-prim:hover { opacity: 0.9; }
+    a.btn-sec {
+      display: inline-block;
+      padding: 13px 28px;
+      background: transparent;
+      border: 1px solid #2d3148;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    a.btn-sec:hover { border-color: #6366f1; color: #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="icono">😕</div>
+  <h1>Pago cancelado</h1>
+  <p>No se realizó ningún cargo. Puedes intentarlo de nuevo cuando quieras.</p>
+  <div class="acciones">
+    <a href="/api/pagar" class="btn-prim">Intentar de nuevo</a>
+    <a href="/login.html" class="btn-sec">Volver al inicio</a>
+  </div>
+</body>
+</html>

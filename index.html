@@ -30,6 +30,19 @@
     }
     header h1 span { color: #6366f1; }
     header p { margin-top: 8px; color: #94a3b8; font-size: 0.95rem; }
+    .btn-logout {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 16px;
+      background: transparent;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #64748b;
+      font-size: 0.82rem;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-logout:hover { border-color: #6366f1; color: #e2e8f0; }
 
     .card {
       background-color: #1e2130;
@@ -251,6 +264,7 @@
 <header>
   <h1>Analizador de <span>Reseñas</span></h1>
   <p>Pega reseñas de Google y obtén un análisis detallado con IA</p>
+  <a href="/api/auth/logout" class="btn-logout">Cerrar sesión</a>
 </header>
 
 <!-- Tarjeta de configuración -->
