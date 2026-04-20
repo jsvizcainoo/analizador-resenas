@@ -17,6 +17,8 @@ const DB_PATH  = path.join(__dirname, 'db.json');
 const mpClient    = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 const preApproval = new PreApproval(mpClient);
 
+const ADMIN_EMAIL = 'josetorresvizcaino15@gmail.com';
+
 // ── Base de datos JSON ───────────────────────────────────────────
 function leerDB() {
   if (!fs.existsSync(DB_PATH)) {
@@ -63,8 +65,9 @@ function requireAuth(req, res, next) {
 function requireSubscription(req, res, next) {
   const db   = leerDB();
   const user = db.users.find(u => u.id === req.session.userId);
-  if (!user || !user.subscriptionActive) return res.redirect('/api/pagar');
-  next();
+  if (!user) return res.redirect('/api/pagar');
+  if (user.email === ADMIN_EMAIL || user.subscriptionActive) return next();
+  res.redirect('/api/pagar');
 }
 
 // ── Rutas protegidas (ANTES que static) ─────────────────────────
@@ -128,12 +131,11 @@ app.post('/api/auth/login', async (req, res) => {
 
     req.session.userId = user.id;
 
-    if (!user.subscriptionActive) {
-      const suscripcion = await crearSuscripcion(user.email);
-      return res.json({ subscriptionActive: false, checkoutUrl: suscripcion.init_point });
-    }
+    if (user.email === ADMIN_EMAIL || user.subscriptionActive)
+      return res.json({ subscriptionActive: true });
 
-    res.json({ subscriptionActive: true });
+    const suscripcion = await crearSuscripcion(user.email);
+    res.json({ subscriptionActive: false, checkoutUrl: suscripcion.init_point });
   } catch (err) {
     console.error('Error en login:', err.message);
     res.status(500).json({ error: 'Error interno. Intenta de nuevo.' });
