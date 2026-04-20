@@ -6,14 +6,16 @@ const path    = require('path');
 const fs      = require('fs');
 const bcrypt  = require('bcryptjs');
 const session = require('express-session');
-const Stripe  = require('stripe');
+const { MercadoPagoConfig, PreApproval } = require('mercadopago');
 const crypto  = require('crypto');
 
 const app      = express();
 const PORT     = process.env.PORT || 3001;
-const stripe   = Stripe(process.env.STRIPE_SECRET_KEY);
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const DB_PATH  = path.join(__dirname, 'db.json');
+
+const mpClient    = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
+const preApproval = new PreApproval(mpClient);
 
 // ── Base de datos JSON ───────────────────────────────────────────
 function leerDB() {
@@ -26,26 +28,21 @@ function guardarDB(data) {
   fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
-// ── Helper: crear sesión de pago en Stripe ───────────────────────
-async function crearCheckout(stripeCustomerId) {
-  return stripe.checkout.sessions.create({
-    customer:             stripeCustomerId,
-    payment_method_types: ['card'],
-    mode:                 'subscription',
-    line_items: [{
-      price_data: {
-        currency:     'usd',
-        product_data: {
-          name:        'Analizador de Reseñas Pro',
-          description: 'Acceso ilimitado · Claude AI · $39/mes',
-        },
-        recurring:   { interval: 'month' },
-        unit_amount: 3900,
+// ── Helper: crear suscripción en MercadoPago ─────────────────────
+async function crearSuscripcion(email) {
+  return preApproval.create({
+    body: {
+      reason:         'Analizador de Reseñas Pro - $39.000 COP/mes',
+      auto_recurring: {
+        frequency:          1,
+        frequency_type:     'months',
+        transaction_amount: 39000,
+        currency_id:        'COP',
       },
-      quantity: 1,
-    }],
-    success_url: `${BASE_URL}/exito?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url:  `${BASE_URL}/cancelado`,
+      back_url:    `${BASE_URL}/exito`,
+      payer_email: email,
+      status:      'pending',
+    },
   });
 }
 
@@ -96,25 +93,23 @@ app.post('/api/auth/registro', async (req, res) => {
     if (db.users.find(u => u.email === email))
       return res.status(400).json({ error: 'Este email ya está registrado. Inicia sesión.' });
 
-    const passwordHash   = await bcrypt.hash(password, 10);
-    const stripeCustomer = await stripe.customers.create({ email });
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const user = {
-      id:                   crypto.randomUUID(),
+      id:                 crypto.randomUUID(),
       email,
       passwordHash,
-      stripeCustomerId:     stripeCustomer.id,
-      stripeSubscriptionId: null,
-      subscriptionActive:   false,
-      createdAt:            new Date().toISOString(),
+      mpPreapprovalId:    null,
+      subscriptionActive: false,
+      createdAt:          new Date().toISOString(),
     };
     db.users.push(user);
     guardarDB(db);
 
     req.session.userId = user.id;
 
-    const checkout = await crearCheckout(stripeCustomer.id);
-    res.json({ checkoutUrl: checkout.url });
+    const suscripcion = await crearSuscripcion(email);
+    res.json({ checkoutUrl: suscripcion.init_point });
   } catch (err) {
     console.error('Error en registro:', err.message);
     res.status(500).json({ error: 'Error interno. Intenta de nuevo.' });
@@ -134,8 +129,8 @@ app.post('/api/auth/login', async (req, res) => {
     req.session.userId = user.id;
 
     if (!user.subscriptionActive) {
-      const checkout = await crearCheckout(user.stripeCustomerId);
-      return res.json({ subscriptionActive: false, checkoutUrl: checkout.url });
+      const suscripcion = await crearSuscripcion(user.email);
+      return res.json({ subscriptionActive: false, checkoutUrl: suscripcion.init_point });
     }
 
     res.json({ subscriptionActive: true });
@@ -151,36 +146,36 @@ app.get('/api/auth/logout', (req, res) => {
   res.redirect('/login.html');
 });
 
-// ── Stripe: redirigir a pago (usuario logueado sin suscripción) ──
+// ── MercadoPago: redirigir a pago ────────────────────────────────
 app.get('/api/pagar', requireAuth, async (req, res) => {
   try {
     const db   = leerDB();
     const user = db.users.find(u => u.id === req.session.userId);
-    const checkout = await crearCheckout(user.stripeCustomerId);
-    res.redirect(checkout.url);
+    const suscripcion = await crearSuscripcion(user.email);
+    res.redirect(suscripcion.init_point);
   } catch (err) {
-    console.error('Error creando checkout:', err.message);
+    console.error('Error creando suscripción:', err.message);
     res.redirect('/cancelado');
   }
 });
 
-// ── Stripe: página de éxito ──────────────────────────────────────
+// ── MercadoPago: página de éxito ─────────────────────────────────
 app.get('/exito', requireAuth, async (req, res) => {
-  const { session_id } = req.query;
-  if (session_id) {
+  const { preapproval_id } = req.query;
+  if (preapproval_id) {
     try {
-      const checkout = await stripe.checkout.sessions.retrieve(session_id);
-      if (checkout.status === 'complete' || checkout.payment_status === 'paid') {
+      const suscripcion = await preApproval.get({ id: preapproval_id });
+      if (suscripcion.status === 'authorized') {
         const db   = leerDB();
         const user = db.users.find(u => u.id === req.session.userId);
         if (user) {
-          user.subscriptionActive   = true;
-          user.stripeSubscriptionId = checkout.subscription;
+          user.subscriptionActive = true;
+          user.mpPreapprovalId    = preapproval_id;
           guardarDB(db);
         }
       }
     } catch (err) {
-      console.error('Error verificando pago:', err.message);
+      console.error('Error verificando suscripción:', err.message);
     }
   }
   res.sendFile(path.join(__dirname, 'exito.html'));
@@ -252,5 +247,5 @@ Reseñas a analizar: ${resenas}`;
 
 app.listen(PORT, () => {
   console.log(`\n✓ Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`  Stripe: modo ${process.env.STRIPE_SECRET_KEY?.includes('test') ? 'PRUEBA' : 'PRODUCCIÓN'}\n`);
+  console.log(`  MercadoPago: Access Token configurado: ${!!process.env.MP_ACCESS_TOKEN}\n`);
 });

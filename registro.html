@@ -91,7 +91,7 @@
       margin-bottom: 16px;
       display: none;
     }
-    .stripe-note {
+    .pago-note {
       text-align: center;
       margin-top: 14px;
       font-size: 0.78rem;
@@ -114,7 +114,7 @@
 
 <div class="card">
   <h2>Crear cuenta</h2>
-  <span class="precio-badge">💳 $39 / mes · Cancela cuando quieras</span>
+  <span class="precio-badge">💳 $39.000 COP / mes · Cancela cuando quieras</span>
 
   <div id="errorBox" class="error"></div>
 
@@ -128,7 +128,7 @@
     <button type="submit" id="btn">Crear cuenta y pagar →</button>
   </form>
 
-  <p class="stripe-note">🔒 Pago seguro procesado por Stripe</p>
+  <p class="pago-note">🔒 Pago seguro procesado por MercadoPago</p>
   <p class="footer-link">¿Ya tienes cuenta? <a href="/login.html">Inicia sesión</a></p>
 </div>
 
@@ -164,13 +164,13 @@
         return;
       }
 
-      btn.textContent = 'Redirigiendo a Stripe…';
+      btn.textContent = 'Redirigiendo a MercadoPago…';
       window.location.href = data.checkoutUrl;
     } catch {
       errorBox.textContent = 'Error de conexión. Intenta de nuevo.';
       errorBox.style.display = 'block';
     } finally {
-      if (btn.textContent !== 'Redirigiendo a Stripe…') {
+      if (btn.textContent !== 'Redirigiendo a MercadoPago…') {
         btn.disabled = false;
         btn.textContent = 'Crear cuenta y pagar →';
       }
