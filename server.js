@@ -103,13 +103,16 @@ app.post('/api/auth/registro', async (req, res) => {
       email,
       passwordHash,
       mpPreapprovalId:    null,
-      subscriptionActive: false,
+      subscriptionActive: email === ADMIN_EMAIL,
       createdAt:          new Date().toISOString(),
     };
     db.users.push(user);
     guardarDB(db);
 
     req.session.userId = user.id;
+
+    if (email === ADMIN_EMAIL)
+      return res.json({ checkoutUrl: '/' });
 
     const suscripcion = await crearSuscripcion(email);
     res.json({ checkoutUrl: suscripcion.init_point });
